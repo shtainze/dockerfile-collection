@@ -1,0 +1,40 @@
+# Source: https://github.com/taroyabuki/fromzero/tree/main/docker/rstudio
+
+# Changed the version
+# Originally:
+# FROM rocker/tidyverse
+FROM rocker/tidyverse:4.4.1
+
+USER root
+
+# Replaced the outdated libnode64 by libnode-dev
+RUN rm /etc/dpkg/dpkg.cfg.d/excludes \
+    && sed -i -e 's%http://[^ ]\+%mirror://mirrors.ubuntu.com/mirrors.txt%g' /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+    curl \
+    default-jdk \
+    dnsutils \
+    iputils-ping \
+    less \
+    libglpk-dev \
+    libnode-dev \
+    libtbb2 \
+    net-tools \
+    vim-tiny \
+    && apt-get --reinstall install -y man-db coreutils manpages \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && yes | unminimize
+
+USER rstudio
+
+# Deleted install.packages(c(...)); since it depends on versions
+RUN Rscript -e ' \
+    options(Ncpus = 32); \
+    options(repos = "https://cran.ism.ac.jp"); \
+    Sys.setenv(DOWNLOAD_STATIC_LIBV8=1);'
+
+WORKDIR /home/rstudio
+
+USER root
